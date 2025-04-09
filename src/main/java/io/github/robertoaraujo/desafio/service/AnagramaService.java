@@ -13,11 +13,25 @@ import java.util.Set;
 public class AnagramaService {
 
     public List<CriarAnagramaResponseDto> criarAnagrama(@Valid CriarAnagramaRequestDto request) {
+        if (request.anagrama() == null || request.anagrama().isEmpty()) {
+            throw new IllegalArgumentException("A entrada não pode ser vazia");
+        }
+
         String entrada = request.anagrama();
 
         // Remove espaços e divide por vírgula
         String[] letras = entrada.replaceAll("\\s+", "").split(",");
 
+        if (letras.length < 2) {
+            throw new IllegalArgumentException("o campo anagrama deve conter pelo menos 2 letras");
+        }
+
+        // Verifica se todos os caracteres são letras
+        for (String letra : letras) {
+            if (!letra.matches("[a-zA-ZÀ-ÿ]+")) {
+                throw new IllegalArgumentException("Todos os caracteres devem ser letras (com ou sem acento), sem números ou símbolos");
+            }
+        }
         // Junta as letras em uma única string: ex: "a,b,c" -> "abc"
         String combinacao = String.join("", letras);
 

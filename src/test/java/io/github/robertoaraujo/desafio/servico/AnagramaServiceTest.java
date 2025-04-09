@@ -29,7 +29,7 @@ public class AnagramaServiceTest {
     }
 
     @Test
-    void deveLancarExcecao_paraEntradaComUmLetra() {
+    void deveLancarExcecao_paraEntradaComUmaLetra() {
         CriarAnagramaRequestDto dto = new CriarAnagramaRequestDto("z");
         IllegalArgumentException ex = Assertions.assertThrows(IllegalArgumentException.class, () ->
                 service.criarAnagrama(dto));

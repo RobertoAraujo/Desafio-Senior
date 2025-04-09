@@ -1,46 +1,72 @@
 package io.github.robertoaraujo.desafio.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.robertoaraujo.desafio.infra.dto.request.CriarAnagramaRequestDto;
 import io.github.robertoaraujo.desafio.infra.dto.response.CriarAnagramaResponseDto;
+import io.github.robertoaraujo.desafio.padrao.Strategy;
 import io.github.robertoaraujo.desafio.service.AnagramaService;
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
-@ExtendWith(MockitoExtension.class)
+import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest
+@AutoConfigureMockMvc
 public class AnagramaControllerTest {
 
-    @Mock
-    private AnagramaService service;
+    @Autowired
+    private MockMvc mockMvc;
 
-    @InjectMocks
-    private AnagramaController controller;
+    @MockitoBean
+    private AnagramaService anagramaService;
+
+    @MockitoBean
+    private Strategy strategy;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private CriarAnagramaRequestDto requestDto;
+    private List<CriarAnagramaResponseDto> respostaEsperada;
+
+    @BeforeEach
+    void setUp() {
+        String entrada = "a,b,c";
+        requestDto = new CriarAnagramaRequestDto(entrada);
+
+        respostaEsperada = List.of(
+                new CriarAnagramaResponseDto("abc"),
+                new CriarAnagramaResponseDto("bac"),
+                new CriarAnagramaResponseDto("acb"),
+                new CriarAnagramaResponseDto("bca"),
+                new CriarAnagramaResponseDto("cab"),
+                new CriarAnagramaResponseDto("cba"));
+    }
 
     @Test
-    void deveRetornar200ComListaDeAnagramas() {
-        // criar dados de teste
-        CriarAnagramaRequestDto request = new CriarAnagramaRequestDto("a,b");
-        List<CriarAnagramaResponseDto> respostaSimulada = List.of(
-                new CriarAnagramaResponseDto("ab"),
-                new CriarAnagramaResponseDto("ba")
-        );
-        // mock do serviço
-        Mockito.when(service.criarAnagrama(request)).thenReturn(respostaSimulada);
+    void criarAnagramas_DeveRetornar200EListaDeAnagramas() throws Exception {
+        when(anagramaService.criarAnagrama(any(CriarAnagramaRequestDto.class))).thenReturn(respostaEsperada);
+        doNothing().when(strategy).executar(); // Mockando o método executar identico do Strategy
 
-        // chamar o método do controlador
-        ResponseEntity<List<CriarAnagramaResponseDto>> resposta = controller.criarAnagramas(request);
+        mockMvc.perform(post("/anagramas").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[*].anagrama").value(containsInAnyOrder(
+                        "abc", "bac", "acb", "bca", "cab", "cba")));
 
-        // verificar o resultado dos testes
-        Assertions.assertEquals(HttpStatus.OK, resposta.getStatusCode());
-        Assertions.assertEquals(2, resposta.getBody().size());
-        Assertions.assertEquals("ab", resposta.getBody().get(0).anagrama());
+        verify(strategy).executar();
+        verify(anagramaService).criarAnagrama(any(CriarAnagramaRequestDto.class));
     }
 }
