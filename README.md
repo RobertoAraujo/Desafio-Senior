@@ -27,7 +27,7 @@ Este projeto é uma API REST desenvolvida com **Spring Boot** que recebe uma ent
 ### Passos
 
 ```bash
-clonar o repositorio git clone https://github.com/seuusuario/desafio-anagrama.git
+clonar o repositorio git clone git@github.com:RobertoAraujo/Desafio-Senior.git
 acesso cd desafio-anagrama
 ```
 ---
